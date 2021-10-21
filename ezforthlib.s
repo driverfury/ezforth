@@ -1,7 +1,18 @@
-.extern _exit
-.extern _putchar
+.data
+
+RSTACK_SIZE = 100
+
+rstack_start:
+    .zero RSTACK_SIZE*4
+rstack_end:
+
+rstackp:
+    .zero 4
 
 .text
+
+.extern _exit
+.extern _putchar
 
 ezforth_exit:
     call _exit

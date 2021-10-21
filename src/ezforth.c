@@ -9,6 +9,7 @@
  *     without depending on redist: https://youtube.com/watch?v=5tg_TbURMy0)
  * [ ] Is exit a standard function (ANSI Forth)? Check it.
  * [x] Cross-platform ezforthlib.s
+ * [ ] T_MULDIV and T_MULDIVMOD
  *
  */
 #include <stdio.h>
@@ -109,12 +110,26 @@ enum
     T_2OVER,
     T_2DROP,
 
+    T_NEGATE,
     T_ADD,
     T_SUB,
     T_MUL,
     T_DIV,
     T_MOD,
     T_DIVMOD,
+    T_MULDIV,
+    T_MULDIVMOD,
+
+    T_1ADD,
+    T_1SUB,
+    T_2ADD,
+    T_2SUB,
+    T_2MUL,
+    T_2DIV,
+
+    T_ABS,
+    T_MIN,
+    T_MAX,
 
     T_INVERT,
     T_EQ,
@@ -135,6 +150,10 @@ enum
     T_DO,
     T_LOOP,
     T_PLOOP,
+
+    T_RIN,
+    T_ROUT,
+    T_RAT,
 
     T_COUNT
 };
@@ -313,12 +332,24 @@ next()
                     else if(streq(word, "2dup"))   { token = T_2DUP; }
                     else if(streq(word, "2over"))  { token = T_2OVER; }
                     else if(streq(word, "2drop"))  { token = T_2DROP; }
+                    else if(streq(word, "negate")) { token = T_NEGATE; }
                     else if(streq(word, "+"))      { token = T_ADD; }
                     else if(streq(word, "-"))      { token = T_SUB; }
                     else if(streq(word, "*"))      { token = T_MUL; }
                     else if(streq(word, "/"))      { token = T_DIV; }
                     else if(streq(word, "mod"))    { token = T_MOD; }
                     else if(streq(word, "/mod"))   { token = T_DIVMOD; }
+                    else if(streq(word, "*/"))     { token = T_MULDIV; }
+                    else if(streq(word, "*/mod"))  { token = T_MULDIVMOD; }
+                    else if(streq(word, "1+"))     { token = T_1ADD; }
+                    else if(streq(word, "1-"))     { token = T_1SUB; }
+                    else if(streq(word, "2+"))     { token = T_2ADD; }
+                    else if(streq(word, "2-"))     { token = T_2SUB; }
+                    else if(streq(word, "2*"))     { token = T_2MUL; }
+                    else if(streq(word, "2/"))     { token = T_2DIV; }
+                    else if(streq(word, "abs"))    { token = T_ABS; }
+                    else if(streq(word, "min"))    { token = T_MIN; }
+                    else if(streq(word, "max"))    { token = T_MAX; }
                     else if(streq(word, "invert")) { token = T_INVERT; }
                     else if(streq(word, "="))      { token = T_EQ; }
                     else if(streq(word, "<>"))     { token = T_NEQ; }
@@ -336,6 +367,9 @@ next()
                     else if(streq(word, "do"))     { token = T_DO; }
                     else if(streq(word, "loop"))   { token = T_LOOP; }
                     else if(streq(word, "+loop"))  { token = T_PLOOP; }
+                    else if(streq(word, ">R"))     { token = T_RIN; }
+                    else if(streq(word, "R>"))     { token = T_ROUT; }
+                    else if(streq(word, "R@"))     { token = T_RAT; }
                     else
                     {
                         token = T_WORD;
@@ -555,6 +589,13 @@ compileins(FILE *fout)
                 fprintf(fout, "\taddl $8,%%esp\n");
             } break;
 
+            case T_NEGATE:
+            {
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tnegl %%eax\n");
+                fprintf(fout, "\tpushl %%eax\n");
+            } break;
+
             case T_ADD:
             {
                 fprintf(fout, "\tpopl %%eax\n");
@@ -605,6 +646,113 @@ compileins(FILE *fout)
                 fprintf(fout, "\tidivl %%ebx\n");
                 fprintf(fout, "\tpushl %%edx\n");
                 fprintf(fout, "\tpushl %%eax\n");
+            } break;
+
+            case T_MULDIV:
+            {
+                /* TODO */
+                assert(0);
+            } break;
+
+            case T_MULDIVMOD:
+            {
+                /* TODO */
+                assert(0);
+            } break;
+
+            case T_1ADD:
+            {
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tincl %%eax\n");
+                fprintf(fout, "\tpushl %%eax\n");
+            } break;
+
+            case T_1SUB:
+            {
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tdecl %%eax\n");
+                fprintf(fout, "\tpushl %%eax\n");
+            } break;
+
+            case T_2ADD:
+            {
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tincl %%eax\n");
+                fprintf(fout, "\tincl %%eax\n");
+                fprintf(fout, "\tpushl %%eax\n");
+            } break;
+
+            case T_2SUB:
+            {
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tdecl %%eax\n");
+                fprintf(fout, "\tdecl %%eax\n");
+                fprintf(fout, "\tpushl %%eax\n");
+            } break;
+
+            case T_2MUL:
+            {
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tsall %%eax\n");
+                fprintf(fout, "\tpushl %%eax\n");
+            } break;
+
+            case T_2DIV:
+            {
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tmovl $2,%%ebx\n");
+                fprintf(fout, "\tcdq\n");
+                fprintf(fout, "\tidivl %%ebx\n");
+                fprintf(fout, "\tpushl %%eax\n");
+            } break;
+
+            case T_ABS:
+            {
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tmovl %%eax,%%edx\n");
+                fprintf(fout, "\tsarl $31,%%eax\n");
+                fprintf(fout, "\tmovl %%eax,%%ebx\n");
+                fprintf(fout, "\txorl %%edx,%%ebx\n");
+                fprintf(fout, "\tsubl %%eax,%%ebx\n");
+                fprintf(fout, "\tpushl %%ebx\n");
+            } break;
+
+            case T_MIN:
+            {
+                lbl1 = genlbl();
+                lbl2 = genlbl();
+
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tpopl %%ebx\n");
+                fprintf(fout, "\tcmpl %%ebx,%%eax\n");
+                fprintf(fout, "\tjl %s\n", lbl1);
+                fprintf(fout, "\tpushl %%ebx\n", lbl1);
+                fprintf(fout, "\tjmp %s\n", lbl2);
+                fprintf(fout, "%s:\n", lbl1);
+                fprintf(fout, "\tpushl %%eax\n", lbl1);
+                fprintf(fout, "%s:\n", lbl2);
+
+                freelbl(lbl1);
+                freelbl(lbl2);
+            } break;
+
+            case T_MAX:
+            {
+                lbl1 = genlbl();
+                lbl2 = genlbl();
+
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tpopl %%ebx\n");
+                fprintf(fout, "\tcmpl %%ebx,%%eax\n");
+                fprintf(fout, "\tjg %s\n", lbl1);
+                fprintf(fout, "\tpushl %%ebx\n", lbl1);
+                fprintf(fout, "\tjmp %s\n", lbl2);
+                fprintf(fout, "%s:\n", lbl1);
+                fprintf(fout, "\tpushl %%eax\n", lbl1);
+                fprintf(fout, "%s:\n", lbl2);
+
+                freelbl(lbl1);
+                freelbl(lbl2);
             } break;
 
             case T_INVERT:
@@ -884,6 +1032,30 @@ compileins(FILE *fout)
                 freelbl(lbl1);
             } break;
 
+            case T_RIN:
+            {
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tmovl rstackp,%%ebx\n");
+                fprintf(fout, "\tsubl $4,%%ebx\n");
+                fprintf(fout, "\tmovl %%ebx,rstackp\n");
+                fprintf(fout, "\tmovl %%eax,(rstackp)\n");
+            } break;
+
+            case T_ROUT:
+            {
+                fprintf(fout, "\tmovl (rstackp),%%eax\n");
+                fprintf(fout, "\tmovl rstackp,%%ebx\n");
+                fprintf(fout, "\tsubl $4,%%ebx\n");
+                fprintf(fout, "\tmovl %%ebx,rstackp\n");
+                fprintf(fout, "\tpushl %%eax\n");
+            } break;
+
+            case T_RAT:
+            {
+                fprintf(fout, "\tmovl (rstackp),%%eax\n");
+                fprintf(fout, "\tpushl %%eax\n");
+            } break;
+
             default:
             {
                 fatal("Invalid instruction!");
@@ -905,6 +1077,7 @@ compile(FILE *fout)
     fprintf(fout, "_main:\n");
     fprintf(fout, "\tpushl %%ebp\n");
     fprintf(fout, "\tmovl %%esp,%%ebp\n");
+    fprintf(fout, "\tmovl $rstack_end,rstackp\n");
     t = next();
     putback();
     while(t != T_EOF)

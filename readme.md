@@ -78,6 +78,8 @@ This will be the output:
 - [x] Words (macros)
 - [x] Conditional blocks (if, do)
 - [ ] Conditional (begin, while, again, until ...)
+- [x] Return stack
+- [ ] I/O
 - [ ] Source file inclusion ('include' op)
 - [ ] Hardcode ezforthlib.s inside the C source code (one for every platform)
 - [ ] Multi-platform compiler
