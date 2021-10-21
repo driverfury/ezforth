@@ -83,6 +83,9 @@ enum
 {
     T_EOF = 0,
 
+    T_LPAREN,
+    T_RPAREN,
+
     T_COLON,
     T_SEMI,
 
@@ -125,6 +128,13 @@ enum
     T_AND,
     T_OR,
     T_DUPIFNOT0,
+
+    T_IF,
+    T_ELSE,
+    T_THEN,
+    T_DO,
+    T_LOOP,
+    T_PLOOP,
 
     T_COUNT
 };
@@ -209,6 +219,7 @@ next()
 {
     int i;
     int isnum;
+    int isneg;
 
     if(tokpb)
     {
@@ -227,8 +238,10 @@ next()
         token = T_EOF;
         i = 0;
         isnum = 1;
+        isneg = 0;
         if(*src)
         {
+            /* Skip spaces */
             while(isspace(*src))
             {
                 if(*src == '\n')
@@ -243,29 +256,47 @@ next()
                 word[i] = *src;
                 if(isnum && !isdigit(*src))
                 {
-                    isnum = 0;
+                    if(i == 0 && *src == '-')
+                    {
+                        isneg = 1;
+                    }
+                    else
+                    {
+                        isnum = 0;
+                    }
                 }
                 ++src;
                 ++i;
             }
             word[i] = 0;
 
-            if(i > 0 && isnum)
+            if((i > 0 && isnum && !isneg) ||
+               (i > 1 && isnum && isneg))
             {
                 token = T_INT;
                 i = 0;
                 tokenval = 0;
+                if(isneg)
+                {
+                    ++i;
+                }
                 while(word[i])
                 {
                     tokenval = tokenval*10 + (word[i] - '0');
                     ++i;
+                }
+                if(isneg)
+                {
+                    tokenval = -tokenval;
                 }
             }
             else
             {
                 if(word[0])
                 {
-                         if(streq(word, ":"))      { token = T_COLON; }
+                         if(streq(word, "("))      { token = T_LPAREN; }
+                    else if(streq(word, ")"))      { token = T_RPAREN; }
+                    else if(streq(word, ":"))      { token = T_COLON; }
                     else if(streq(word, ";"))      { token = T_SEMI; }
                     else if(streq(word, "."))      { token = T_DOT; }
                     else if(streq(word, "emit"))   { token = T_EMIT; }
@@ -299,6 +330,12 @@ next()
                     else if(streq(word, "and"))    { token = T_AND; }
                     else if(streq(word, "or"))     { token = T_OR; }
                     else if(streq(word, "?dup"))   { token = T_DUPIFNOT0; }
+                    else if(streq(word, "if"))     { token = T_IF; }
+                    else if(streq(word, "else"))   { token = T_ELSE; }
+                    else if(streq(word, "then"))   { token = T_THEN; }
+                    else if(streq(word, "do"))     { token = T_DO; }
+                    else if(streq(word, "loop"))   { token = T_LOOP; }
+                    else if(streq(word, "+loop"))  { token = T_PLOOP; }
                     else
                     {
                         token = T_WORD;
@@ -347,11 +384,18 @@ compileins(FILE *fout)
 {
     char *lbl1;
     char *lbl2;
+    int t;
 
     if(next() != T_EOF)
     {
         switch(token)
         {
+            case T_LPAREN:
+            {
+                /* Skip comments */
+                while(next() != T_RPAREN);
+            } break;
+
             case T_COLON:
             {
                 fatal("You cannot define a word inside a word definition!\n");
@@ -362,7 +406,6 @@ compileins(FILE *fout)
                 char *wcode;
                 char *srcprev;
                 int srclprev;
-                int t;
 
                 srcprev = src;
                 srclprev = srcl;
@@ -522,10 +565,10 @@ compileins(FILE *fout)
 
             case T_SUB:
             {
-                fprintf(fout, "\tpopl %%eax\n");
                 fprintf(fout, "\tpopl %%edx\n");
-                fprintf(fout, "\tsubl %%eax,%%edx\n");
-                fprintf(fout, "\tpushl %%edx\n");
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tsubl %%edx,%%eax\n");
+                fprintf(fout, "\tpushl %%eax\n");
             } break;
 
             case T_MUL:
@@ -757,6 +800,90 @@ compileins(FILE *fout)
                 freelbl(lbl1);
             } break;
 
+            case T_IF:
+            {
+                int haselse;
+
+                lbl1 = genlbl();
+                lbl2 = genlbl();
+
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tcmp $0,%%eax\n");
+                fprintf(fout, "\tje %s\n", lbl1);
+
+                haselse = 0;
+                t = next();
+                putback();
+                while(t != T_THEN)
+                {
+                    if(t == T_ELSE)
+                    {
+                        haselse = 1;
+                        expect(T_ELSE);
+                        fprintf(fout, "\tjmp %s\n", lbl2);
+                        fprintf(fout, "%s:\n", lbl1);
+                    }
+
+                    compileins(fout);
+
+                    t = next();
+                    putback();
+                }
+                expect(T_THEN);
+
+                if(haselse)
+                {
+                    fprintf(fout, "%s:\n", lbl2);
+                }
+                else
+                {
+                    fprintf(fout, "%s:\n", lbl1);
+                }
+
+                freelbl(lbl1);
+                freelbl(lbl2);
+            } break;
+
+            case T_DO:
+            {
+                lbl1 = genlbl();
+
+                fprintf(fout, "%s:\n", lbl1);
+
+                t = next();
+                putback();
+                while(t != T_LOOP && t != T_PLOOP)
+                {
+                    compileins(fout);
+                    t = next();
+                    putback();
+                }
+                expect(t);
+
+                if(t == T_PLOOP)
+                {
+                    fprintf(fout, "\tpopl %%eax\n");
+                    fprintf(fout, "\tpopl %%ecx\n");
+                    fprintf(fout, "\tpopl %%edx\n");
+                    fprintf(fout, "\taddl %%eax,%%ecx\n");
+                }
+                else
+                {
+                    fprintf(fout, "\tpopl %%ecx\n");
+                    fprintf(fout, "\tpopl %%edx\n");
+                    fprintf(fout, "\tpushl %%edx\n");
+                    fprintf(fout, "\tincl %%ecx\n");
+                }
+                fprintf(fout, "\tpushl %%edx\n");
+                fprintf(fout, "\tpushl %%ecx\n");
+                fprintf(fout, "\tcmpl %%edx,%%ecx\n");
+                fprintf(fout, "\tjl %s\n", lbl1);
+                fprintf(fout, "\tpopl %%ecx\n");
+                fprintf(fout, "\tpopl %%edx\n");
+
+                freelbl(lbl1);
+            } break;
+
             default:
             {
                 fatal("Invalid instruction!");
@@ -862,35 +989,6 @@ main(int argc, char *argv[])
     srcin[cread] = 0;
 
     init(fnamein, srcin);
-
-#if 0
-        "30 spaces 42 emit 42 emit 42 emit 42 emit 42 emit cr "
-        "30 spaces 42 emit cr "
-        "30 spaces 42 emit 42 emit 42 emit 42 emit 42 emit cr "
-        "30 spaces 42 emit cr "
-        "30 spaces 42 emit cr "
-        "cr cr "
-        "54 5 - . 2 3 + . "
-#endif
-
-#if 0
-        "1 0 and . 33 33 and . 0 0 and . cr "
-        "1 0 or . 33 33 or . 0 0 or . cr "
-        ": gatto 116 97 99 emit emit emit ; "
-        ": zac 99 97 122 emit emit emit ; "
-        "gatto space zac cr 42 emit "
-        "666 dup . exit "
-#endif
-
-#if 0
-        ": star 42 emit ; "
-        ": margin cr 30 spaces ; "
-        ": blip margin star ; "
-        ": bar margin star star star star star ; "
-        "bar blip bar blip blip "
-        "0 exit "
-#endif
-
     compile(fout);
     fclose(fout);
 
