@@ -1080,7 +1080,8 @@ compile(FILE *fout)
     fprintf(fout, "_main:\n");
     fprintf(fout, "\tpushl %%ebp\n");
     fprintf(fout, "\tmovl %%esp,%%ebp\n");
-    fprintf(fout, "\tmovl $rstack_end,rstackp\n");
+    fprintf(fout, "\tmovl rstackp,%%eax\n");
+    fprintf(fout, "\tmovl rstack_end,(%%eax)\n");
     t = next();
     putback();
     while(t != T_EOF)
