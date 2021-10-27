@@ -2,6 +2,10 @@
 
 Forth compiler made in ANSI C89.
 
+Target platforms:
+- [x] Linux.
+- [ ] Win32.
+
 ## Quick start
 
 Save this simple program in ```program.ezf``` file.
@@ -35,7 +39,7 @@ Compile it with the following command:
 Run it.
 
 ```bash
-./program.exe
+./a.out
 ```
 
 This will be the output:
@@ -81,6 +85,5 @@ This will be the output:
 - [x] Return stack
 - [ ] I/O
 - [ ] Source file inclusion ('include' op)
-- [ ] Hardcode ezforthlib.s inside the C source code (one for every platform)
-- [ ] Multi-platform compiler
-- [ ] Our own assembler? Ambitious
+- [ ] Hardcode flib.s inside the C source code
+- [x] Our own assembler? Ambitious
