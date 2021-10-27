@@ -469,7 +469,7 @@ compileins(FILE *fout)
 
             case T_DOT:
             {
-                fprintf(fout, "\tcall printint\n");
+                fprintf(fout, "\tcall putint\n");
                 fprintf(fout, "\taddl $4,%%esp\n");
                 fprintf(fout, "\tpushl $32\n");
                 fprintf(fout, "\tcall putc\n");
@@ -496,11 +496,13 @@ compileins(FILE *fout)
 
                 fprintf(fout, "\tpushl $32\n");
                 fprintf(fout, "%s:\n", lbl1);
-                fprintf(fout, "\tmovl 4(%%esp),%%eax\n");
+                fprintf(fout, "\tmovl %%esp,%%eax\n");
+                fprintf(fout, "\tmovl 4(%%eax),%%eax\n");
                 fprintf(fout, "\tcmpl $0,%%eax\n");
                 fprintf(fout, "\tjle %s\n", lbl2);
                 fprintf(fout, "\tcall putc\n");
-                fprintf(fout, "\tdecl 4(%%esp)\n");
+                fprintf(fout, "\tmovl %%esp,%%eax\n");
+                fprintf(fout, "\tdecl 4(%%eax)\n");
                 fprintf(fout, "\tjmp %s\n", lbl1);
                 fprintf(fout, "%s:\n", lbl2);
                 fprintf(fout, "\taddl $8,%%esp\n");
@@ -538,7 +540,8 @@ compileins(FILE *fout)
 
             case T_OVER:
             {
-                fprintf(fout, "\tpushl 4(%%esp)\n");
+                fprintf(fout, "\tmovl %%esp,%%eax\n");
+                fprintf(fout, "\tpushl 4(%%eax)\n");
             } break;
 
             case T_ROT:
@@ -570,14 +573,18 @@ compileins(FILE *fout)
 
             case T_2DUP:
             {
-                fprintf(fout, "\tpushl 4(%%esp)\n");
-                fprintf(fout, "\tpushl 4(%%esp)\n");
+                fprintf(fout, "\tmovl %%esp,%%eax\n");
+                fprintf(fout, "\tpushl 4(%%eax)\n");
+                fprintf(fout, "\tmovl %%esp,%%eax\n");
+                fprintf(fout, "\tpushl 4(%%eax)\n");
             } break;
 
             case T_2OVER:
             {
-                fprintf(fout, "\tpushl 12(%%esp)\n");
-                fprintf(fout, "\tpushl 12(%%esp)\n");
+                fprintf(fout, "\tmovl %%esp,%%eax\n");
+                fprintf(fout, "\tpushl 12(%%eax)\n");
+                fprintf(fout, "\tmovl %%esp,%%eax\n");
+                fprintf(fout, "\tpushl 12(%%eax)\n");
             } break;
 
             case T_2DROP:
@@ -1099,6 +1106,8 @@ compile(FILE *fout)
         putback();
     }
 
+    fprintf(fout, "\tpushl $0\n");
+    fprintf(fout, "\tjmp exit\n");
     fprintf(fout, "\tmovl $0,%%eax\n");
     fprintf(fout, "\tleave\n");
     fprintf(fout, "\tret\n");

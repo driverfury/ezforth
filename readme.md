@@ -3,29 +3,28 @@
 Forth compiler made in ANSI C89.
 
 Target platforms:
-- [x] Linux.
-- [ ] Win32.
+- [x] Linux
+- [ ] Win32
 
 ## Quick start
 
-Save this simple program in ```program.ezf``` file.
+You can find a simple hello world program ```test/hlowrld.ezf``` file:
 
 ```forth
 : star 42 emit ;
-: margin cr 20 spaces ;
+: margin cr 30 spaces ;
 : blip  margin star ;
 : dblip margin star 3 spaces star ;
 : mblip margin 2 spaces star 2 spaces ;
-: bar margin star star star star star ;
+: bar  margin star star star star star ;
 
-: print_F     bar   blip  bar   blip  blip ;
-: print_O     bar   dblip dblip dblip bar  ;
-: print_R     bar   dblip bar   blip  space star blip 2 spaces star ;
-: print_T     bar   mblip mblip mblip mblip ;
-: print_H     dblip dblip bar   dblip dblip ;
+: F bar   blip  bar   blip  blip  cr ;
+: O bar   dblip dblip dblip bar   cr ;
+: R bar   dblip bar   blip space star blip 2 spaces star cr ;
+: T bar   mblip mblip mblip mblip cr ;
+: H dblip dblip bar   dblip dblip cr ;
 
-: hello print_F cr print_O cr print_R cr print_T cr print_H cr ;
-hello
+F O R T H cr
 
 0 exit
 ```
@@ -33,7 +32,7 @@ hello
 Compile it with the following command:
 
 ```bash
-./ezforth program.ezf
+./ezforth test/hlowrld.ezf
 ```
 
 Run it.
