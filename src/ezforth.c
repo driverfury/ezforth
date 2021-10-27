@@ -726,10 +726,10 @@ compileins(FILE *fout)
                 fprintf(fout, "\tpopl %%ebx\n");
                 fprintf(fout, "\tcmpl %%ebx,%%eax\n");
                 fprintf(fout, "\tjl %s\n", lbl1);
-                fprintf(fout, "\tpushl %%ebx\n", lbl1);
+                fprintf(fout, "\tpushl %%ebx\n");
                 fprintf(fout, "\tjmp %s\n", lbl2);
                 fprintf(fout, "%s:\n", lbl1);
-                fprintf(fout, "\tpushl %%eax\n", lbl1);
+                fprintf(fout, "\tpushl %%eax\n");
                 fprintf(fout, "%s:\n", lbl2);
 
                 freelbl(lbl1);
@@ -745,10 +745,10 @@ compileins(FILE *fout)
                 fprintf(fout, "\tpopl %%ebx\n");
                 fprintf(fout, "\tcmpl %%ebx,%%eax\n");
                 fprintf(fout, "\tjg %s\n", lbl1);
-                fprintf(fout, "\tpushl %%ebx\n", lbl1);
+                fprintf(fout, "\tpushl %%ebx\n");
                 fprintf(fout, "\tjmp %s\n", lbl2);
                 fprintf(fout, "%s:\n", lbl1);
-                fprintf(fout, "\tpushl %%eax\n", lbl1);
+                fprintf(fout, "\tpushl %%eax\n");
                 fprintf(fout, "%s:\n", lbl2);
 
                 freelbl(lbl1);

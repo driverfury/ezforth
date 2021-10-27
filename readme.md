@@ -83,3 +83,4 @@ This will be the output:
 - [ ] Source file inclusion ('include' op)
 - [ ] Hardcode ezforthlib.s inside the C source code (one for every platform)
 - [ ] Multi-platform compiler
+- [ ] Our own assembler? Ambitious
