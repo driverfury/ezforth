@@ -8,19 +8,15 @@
  * [ ] Make my own stdio.h since we only use printf (or make a tiny executable
  *     without depending on redist: https://youtube.com/watch?v=5tg_TbURMy0)
  * [ ] Is exit a standard function (ANSI Forth)? Check it.
- * [x] Cross-platform ezforthlib.s
  * [ ] T_MULDIV and T_MULDIVMOD
  *
  */
-#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <stdarg.h>
-
-#define isspace(c)\
-    ((c) ==  ' ' || (c) == '\t' || (c) == '\v' ||\
-     (c) == '\n' || (c) == '\r' || (c) == '\f')
-#define isdigit(c) ((c) >= '0' && (c) <= '9')
+#include <string.h>
+#include <ctype.h>
+#include <stdio.h>
 
 int
 streq(char *s1, char *s2)
@@ -400,7 +396,7 @@ genlbl()
     l = (char *)malloc(13);
     l[0] = '.';
     l[1] = 'L';
-    n = snprintf(l+2, (size_t)10, "%d", lblcount);
+    n = sprintf(l+2, "%d", lblcount);
     ++lblcount;
     l[n+2] = 0;
 
@@ -473,23 +469,23 @@ compileins(FILE *fout)
 
             case T_DOT:
             {
-                fprintf(fout, "\tcall print_int\n");
+                fprintf(fout, "\tcall printint\n");
                 fprintf(fout, "\taddl $4,%%esp\n");
-                fprintf(fout, "\tpushl $' '\n");
-                fprintf(fout, "\tcall print_char\n");
+                fprintf(fout, "\tpushl $32\n");
+                fprintf(fout, "\tcall putc\n");
                 fprintf(fout, "\taddl $4,%%esp\n");
             } break;
 
             case T_EMIT:
             {
-                fprintf(fout, "\tcall print_char\n");
+                fprintf(fout, "\tcall putc\n");
                 fprintf(fout, "\taddl $4,%%esp\n");
             } break;
 
             case T_SPACE:
             {
-                fprintf(fout, "\tpushl $' '\n");
-                fprintf(fout, "\tcall print_char\n");
+                fprintf(fout, "\tpushl $32\n");
+                fprintf(fout, "\tcall putc\n");
                 fprintf(fout, "\taddl $4,%%esp\n");
             } break;
 
@@ -498,12 +494,12 @@ compileins(FILE *fout)
                 lbl1 = genlbl();
                 lbl2 = genlbl();
 
-                fprintf(fout, "\tpushl $' '\n");
+                fprintf(fout, "\tpushl $32\n");
                 fprintf(fout, "%s:\n", lbl1);
                 fprintf(fout, "\tmovl 4(%%esp),%%eax\n");
                 fprintf(fout, "\tcmpl $0,%%eax\n");
                 fprintf(fout, "\tjle %s\n", lbl2);
-                fprintf(fout, "\tcall print_char\n");
+                fprintf(fout, "\tcall putc\n");
                 fprintf(fout, "\tdecl 4(%%esp)\n");
                 fprintf(fout, "\tjmp %s\n", lbl1);
                 fprintf(fout, "%s:\n", lbl2);
@@ -516,13 +512,13 @@ compileins(FILE *fout)
             case T_CR:
             {
                 fprintf(fout, "\tpushl $10\n");
-                fprintf(fout, "\tcall print_char\n");
+                fprintf(fout, "\tcall putc\n");
                 fprintf(fout, "\taddl $4,%%esp\n");
             } break;
 
             case T_EXIT:
             {
-                fprintf(fout, "\tjmp ezforth_exit\n");
+                fprintf(fout, "\tjmp exit\n");
             } break;
 
             case T_SWAP:
@@ -1073,11 +1069,7 @@ compile(FILE *fout)
     int t;
     char *wcode;
 
-    fprintf(fout, ".code32\n");
-    fprintf(fout, ".text\n");
-    fprintf(fout, ".include \"ezforthlib.s\"\n");
-    fprintf(fout, ".global _main\n");
-    fprintf(fout, "_main:\n");
+    fprintf(fout, "main:\n");
     fprintf(fout, "\tpushl %%ebp\n");
     fprintf(fout, "\tmovl %%esp,%%ebp\n");
     fprintf(fout, "\tmovl rstackp,%%eax\n");
@@ -1118,6 +1110,8 @@ usage(char *pname)
 {
     printf("Usage: %s <source_file>\n", pname);
 }
+
+#include "asm.c"
 
 int
 main(int argc, char *argv[])
@@ -1168,6 +1162,8 @@ main(int argc, char *argv[])
     init(fnamein, srcin);
     compile(fout);
     fclose(fout);
+
+    assemble(fnameout, "a.out");
 
     return(0);
 }
