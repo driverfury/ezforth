@@ -6,13 +6,23 @@ Target platforms:
 - [x] Linux
 - [ ] Win32
 
+## How to build?
+
+No make file needed. Just:
+
+```bash
+./build.sh
+```
+
+Note: gcc is needed. If you have another compiler just compile ```src/ezforth.c``` source file.
+
 ## Quick start
 
 You can find a simple hello world program ```test/hlowrld.ezf``` file:
 
 ```forth
 : star 42 emit ;
-: margin cr 30 spaces ;
+: margin cr 10 spaces ;
 : blip  margin star ;
 : dblip margin star 3 spaces star ;
 : mblip margin 2 spaces star 2 spaces ;

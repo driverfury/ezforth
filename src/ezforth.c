@@ -166,7 +166,7 @@ char wordpb[32];
  * NOTE(driverfury):
  *
  * When a word is defined we store the position in the source file where it
- * starts. We don't need to store the end because we now that we need to
+ * starts. We don't need to store the end because kwe now that we need to
  * stop when the semicolon ';' is encountered (no nested word definitions
  * allowed).
  * 
