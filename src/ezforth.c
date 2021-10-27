@@ -616,7 +616,7 @@ compileins(FILE *fout)
             {
                 fprintf(fout, "\tpopl %%eax\n");
                 fprintf(fout, "\tpopl %%edx\n");
-                fprintf(fout, "\timul %%edx\n");
+                fprintf(fout, "\timull %%edx\n");
                 fprintf(fout, "\tpushl %%eax\n");
             } break;
 
@@ -708,6 +708,8 @@ compileins(FILE *fout)
 
             case T_ABS:
             {
+                /* TODO: Abs without sarl instruction */
+                /*
                 fprintf(fout, "\tpopl %%eax\n");
                 fprintf(fout, "\tmovl %%eax,%%edx\n");
                 fprintf(fout, "\tsarl $31,%%eax\n");
@@ -715,6 +717,7 @@ compileins(FILE *fout)
                 fprintf(fout, "\txorl %%edx,%%ebx\n");
                 fprintf(fout, "\tsubl %%eax,%%ebx\n");
                 fprintf(fout, "\tpushl %%ebx\n");
+                */
             } break;
 
             case T_MIN:
@@ -769,7 +772,7 @@ compileins(FILE *fout)
 
                 fprintf(fout, "\tpopl %%ecx\n");
                 fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tcmp %%ecx,%%eax\n");
+                fprintf(fout, "\tcmpl %%ecx,%%eax\n");
                 fprintf(fout, "\tje %s\n", lbl1);
                 fprintf(fout, "\tpushl $0\n");
                 fprintf(fout, "\tjmp %s\n", lbl2);
@@ -788,7 +791,7 @@ compileins(FILE *fout)
 
                 fprintf(fout, "\tpopl %%ecx\n");
                 fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tcmp %%ecx,%%eax\n");
+                fprintf(fout, "\tcmpl %%ecx,%%eax\n");
                 fprintf(fout, "\tjne %s\n", lbl1);
                 fprintf(fout, "\tpushl $0\n");
                 fprintf(fout, "\tjmp %s\n", lbl2);
@@ -807,7 +810,7 @@ compileins(FILE *fout)
 
                 fprintf(fout, "\tpopl %%ecx\n");
                 fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tcmp %%ecx,%%eax\n");
+                fprintf(fout, "\tcmpl %%ecx,%%eax\n");
                 fprintf(fout, "\tjl %s\n", lbl1);
                 fprintf(fout, "\tpushl $0\n");
                 fprintf(fout, "\tjmp %s\n", lbl2);
@@ -826,7 +829,7 @@ compileins(FILE *fout)
 
                 fprintf(fout, "\tpopl %%ecx\n");
                 fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tcmp %%ecx,%%eax\n");
+                fprintf(fout, "\tcmpl %%ecx,%%eax\n");
                 fprintf(fout, "\tjg %s\n", lbl1);
                 fprintf(fout, "\tpushl $0\n");
                 fprintf(fout, "\tjmp %s\n", lbl2);
@@ -844,7 +847,7 @@ compileins(FILE *fout)
                 lbl2 = genlbl();
 
                 fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tcmp $0,%%eax\n");
+                fprintf(fout, "\tcmpl $0,%%eax\n");
                 fprintf(fout, "\tje %s\n", lbl1);
                 fprintf(fout, "\tpushl $0\n");
                 fprintf(fout, "\tjmp %s\n", lbl2);
@@ -862,7 +865,7 @@ compileins(FILE *fout)
                 lbl2 = genlbl();
 
                 fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tcmp $0,%%eax\n");
+                fprintf(fout, "\tcmpl $0,%%eax\n");
                 fprintf(fout, "\tjl %s\n", lbl1);
                 fprintf(fout, "\tpushl $0\n");
                 fprintf(fout, "\tjmp %s\n", lbl2);
@@ -880,7 +883,7 @@ compileins(FILE *fout)
                 lbl2 = genlbl();
 
                 fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tcmp $0,%%eax\n");
+                fprintf(fout, "\tcmpl $0,%%eax\n");
                 fprintf(fout, "\tjg %s\n", lbl1);
                 fprintf(fout, "\tpushl $0\n");
                 fprintf(fout, "\tjmp %s\n", lbl2);
@@ -899,9 +902,9 @@ compileins(FILE *fout)
 
                 fprintf(fout, "\tpopl %%ecx\n");
                 fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tcmp $0,%%eax\n");
+                fprintf(fout, "\tcmpl $0,%%eax\n");
                 fprintf(fout, "\tje %s\n", lbl1);
-                fprintf(fout, "\tcmp $0,%%ecx\n");
+                fprintf(fout, "\tcmpl $0,%%ecx\n");
                 fprintf(fout, "\tje %s\n", lbl1);
                 fprintf(fout, "\tpushl $-1\n");
                 fprintf(fout, "\tjmp %s\n", lbl2);
@@ -920,9 +923,9 @@ compileins(FILE *fout)
 
                 fprintf(fout, "\tpopl %%ecx\n");
                 fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tcmp $0,%%eax\n");
+                fprintf(fout, "\tcmpl $0,%%eax\n");
                 fprintf(fout, "\tjne %s\n", lbl1);
-                fprintf(fout, "\tcmp $0,%%ecx\n");
+                fprintf(fout, "\tcmpl $0,%%ecx\n");
                 fprintf(fout, "\tjne %s\n", lbl1);
                 fprintf(fout, "\tpushl $0\n");
                 fprintf(fout, "\tjmp %s\n", lbl2);
@@ -939,7 +942,7 @@ compileins(FILE *fout)
                 lbl1 = genlbl();
 
                 fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tcmp $0,%%eax\n");
+                fprintf(fout, "\tcmpl $0,%%eax\n");
                 fprintf(fout, "\tje %s\n", lbl1);
                 fprintf(fout, "\tpushl %%eax\n");
                 fprintf(fout, "%s:\n", lbl1);
@@ -956,7 +959,7 @@ compileins(FILE *fout)
                 lbl2 = genlbl();
 
                 fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tcmp $0,%%eax\n");
+                fprintf(fout, "\tcmpl $0,%%eax\n");
                 fprintf(fout, "\tje %s\n", lbl1);
 
                 haselse = 0;
