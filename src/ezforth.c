@@ -90,10 +90,14 @@ enum
     T_INT,
     T_DOT,
     T_EMIT,
+    T_TYPE,
     T_SPACE,
     T_SPACES,
     T_CR,
     T_PAGE,
+    T_CLS,
+
+    T_KEY,
 
     T_QUIT,
     T_EXIT,
@@ -150,6 +154,7 @@ enum
     T_PLOOP,
     T_LEAVE,
 
+    T_SPAT,
     T_RIN,
     T_ROUT,
     T_RAT,
@@ -335,10 +340,13 @@ next()
                     else if(streq(word, ";"))        { token = T_SEMI; }
                     else if(streq(word, "."))        { token = T_DOT; }
                     else if(streq(word, "emit"))     { token = T_EMIT; }
+                    else if(streq(word, "type"))     { token = T_TYPE; }
                     else if(streq(word, "space"))    { token = T_SPACE; }
                     else if(streq(word, "spaces"))   { token = T_SPACES; }
                     else if(streq(word, "cr"))       { token = T_CR; }
                     else if(streq(word, "page"))     { token = T_PAGE; }
+                    else if(streq(word, "cls"))      { token = T_CLS; }
+                    else if(streq(word, "key"))      { token = T_KEY; }
                     else if(streq(word, "quit"))     { token = T_QUIT; }
                     else if(streq(word, "exit"))     { token = T_EXIT; }
                     else if(streq(word, "swap"))     { token = T_SWAP; }
@@ -386,6 +394,7 @@ next()
                     else if(streq(word, "loop"))     { token = T_LOOP; }
                     else if(streq(word, "+loop"))    { token = T_PLOOP; }
                     else if(streq(word, "leave"))    { token = T_LEAVE; }
+                    else if(streq(word, "SP@"))      { token = T_SPAT; }
                     else if(streq(word, ">R"))       { token = T_RIN; }
                     else if(streq(word, "R>"))       { token = T_ROUT; }
                     else if(streq(word, "R@"))       { token = T_RAT; }
@@ -617,6 +626,53 @@ compileins(FILE *fout)
                 fprintf(fout, "\taddl $4,%%esp\n");
             } break;
 
+            case T_TYPE:
+            {
+                lbl1 = genlbl();
+                lbl2 = genlbl();
+
+                fprintf(fout, "\tmovl $0,%%eax\n");
+                fprintf(fout, "\tpushl %%eax\n");
+                fprintf(fout, "%s:\n", lbl1);
+                fprintf(fout, "\tpopl %%eax\n"); /* counter */
+                fprintf(fout, "\tpopl %%edx\n"); /* length */
+                fprintf(fout, "\tpopl %%ebx\n"); /* addr */
+    
+                /* while (length > counter) */
+                fprintf(fout, "\tcmpl %%eax,%%edx\n");
+                fprintf(fout, "\tjle %s\n", lbl2);
+
+                fprintf(fout, "\tpushl %%ebx\n");
+                fprintf(fout, "\tpushl %%edx\n");
+                fprintf(fout, "\tpushl %%eax\n");
+
+                /* putc(ebx) */
+                fprintf(fout, "\tpushl (%%ebx)\n");
+                fprintf(fout, "\tcall putc\n");
+                fprintf(fout, "\taddl $4,%%esp\n");
+
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tpopl %%edx\n");
+                fprintf(fout, "\tpopl %%ebx\n");
+
+                /* addr += 4 */
+                fprintf(fout, "\taddl $4,%%ebx\n");
+
+                /* ++counter */
+                fprintf(fout, "\tincl %%eax\n");
+
+                fprintf(fout, "\tpushl %%ebx\n");
+                fprintf(fout, "\tpushl %%edx\n");
+                fprintf(fout, "\tpushl %%eax\n");
+
+                fprintf(fout, "\tjmp %s\n", lbl1);
+
+                fprintf(fout, "%s:\n", lbl2); /* end of loop */
+
+                freelbl(lbl1);
+                freelbl(lbl2);
+            } break;
+
             case T_SPACE:
             {
                 fprintf(fout, "\tpushl $32\n");
@@ -654,6 +710,7 @@ compileins(FILE *fout)
             } break;
 
             case T_PAGE:
+            case T_CLS:
             {
                 /* NOTE(driverfury):
                  * We put 27,"[H",27,"[2J" bytes sequence to the screen
@@ -680,6 +737,12 @@ compileins(FILE *fout)
                 fprintf(fout, "\tpushl $74\n");
                 fprintf(fout, "\tcall putc\n");
                 fprintf(fout, "\taddl $4,%%esp\n");
+            } break;
+
+            case T_KEY:
+            {
+                fprintf(fout, "\tcall getc\n");
+                fprintf(fout, "\tpushl %%eax\n");
             } break;
 
             case T_QUIT:
@@ -1219,6 +1282,11 @@ compileins(FILE *fout)
                 freelbl(lbl2);
             } break;
 
+            case T_SPAT:
+            {
+                fprintf(fout, "\tpushl %%esp\n");
+            } break;
+
             case T_RIN:
             {
                 fprintf(fout, "\tpopl %%eax\n");
@@ -1358,16 +1426,19 @@ compile(FILE *fout)
 void
 usage(char *pname)
 {
-    printf("Usage: %s <source_file>\n", pname);
+    printf("Usage: %s <source_file> [output_file]\n", pname);
 }
 
 #include "asm.c"
+
+#include <sys/stat.h>
 
 int
 main(int argc, char *argv[])
 {
     FILE *fout;
     FILE *fin;
+    char *fnameasm;
     char *fnameout;
     char *fnamein;
     long fsizein;
@@ -1381,11 +1452,11 @@ main(int argc, char *argv[])
         return(0);
     }
 
-    fnameout = "test.s";
-    fout = fopen(fnameout, "w");
+    fnameasm = "test.s";
+    fout = fopen(fnameasm, "w");
     if(!fout)
     {
-        printf("[!] ERROR: Cannot open output file '%s'\n", fnameout);
+        printf("[!] ERROR: Cannot open output file '%s'\n", fnameasm);
         exit(1);
     }
 
@@ -1429,7 +1500,17 @@ main(int argc, char *argv[])
 
     fclose(fout);
 
-    assemble(fnameout, "a.out");
+    if(argc > 2)
+    {
+        fnameout = argv[2];
+    }
+    else
+    {
+        fnameout = "a.out";
+    }
+
+    assemble(fnameasm, fnameout);
+    chmod(fnameout, S_IRUSR|S_IXUSR);
 
     return(0);
 }

@@ -42,13 +42,13 @@ F O R T H cr
 Compile it with the following command:
 
 ```bash
-./ezforth test/hlowrld.ezf
+./ezforth test/hlowrld.ezf hello
 ```
 
 Run it.
 
 ```bash
-./a.out
+./hello
 ```
 
 This will be the output:
@@ -95,6 +95,7 @@ This will be the output:
 - [x] Variables and constants
 - [ ] Arrays
 - [ ] I/O
+- [ ] Exit and quit inside a word definition
 - [ ] Source file inclusion ('include' op)
 - [ ] Hardcode flib.s inside the C source code
 - [x] Our own assembler? Ambitious

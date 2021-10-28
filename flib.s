@@ -6,6 +6,20 @@ exit:
     popl %ebx
     syscall
 
+getc:
+    pushl %ebp
+    movl %esp,%ebp
+    pushl $0
+    movl $3,%eax
+    movl $1,%ebx
+    movl %esp,%ecx
+    movl $1,%edx
+    syscall
+    movl %esp,%eax
+    movl (%eax),%eax
+    leave
+    ret
+
 putc:
     pushl %ebp
     movl %esp,%ebp
