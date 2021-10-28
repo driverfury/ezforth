@@ -92,6 +92,8 @@ This will be the output:
 - [x] Conditional blocks (if, do)
 - [ ] Conditional (begin, while, again, until ...)
 - [x] Return stack
+- [x] Variables and constants
+- [ ] Arrays
 - [ ] I/O
 - [ ] Source file inclusion ('include' op)
 - [ ] Hardcode flib.s inside the C source code

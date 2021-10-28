@@ -93,7 +93,9 @@ enum
     T_SPACE,
     T_SPACES,
     T_CR,
+    T_PAGE,
 
+    T_QUIT,
     T_EXIT,
 
     T_SWAP,
@@ -146,10 +148,18 @@ enum
     T_DO,
     T_LOOP,
     T_PLOOP,
+    T_LEAVE,
 
     T_RIN,
     T_ROUT,
     T_RAT,
+
+    T_CONSTANT,
+    T_VARIABLE,
+    T_BANG,
+    T_PBANG,
+    T_AT,
+    T_QMARK,
 
     T_COUNT
 };
@@ -309,63 +319,82 @@ next()
             {
                 if(word[0])
                 {
-                         if(streq(word, "("))      { token = T_LPAREN; }
-                    else if(streq(word, ")"))      { token = T_RPAREN; }
-                    else if(streq(word, ":"))      { token = T_COLON; }
-                    else if(streq(word, ";"))      { token = T_SEMI; }
-                    else if(streq(word, "."))      { token = T_DOT; }
-                    else if(streq(word, "emit"))   { token = T_EMIT; }
-                    else if(streq(word, "space"))  { token = T_SPACE; }
-                    else if(streq(word, "spaces")) { token = T_SPACES; }
-                    else if(streq(word, "cr"))     { token = T_CR; }
-                    else if(streq(word, "exit"))   { token = T_EXIT; }
-                    else if(streq(word, "swap"))   { token = T_SWAP; }
-                    else if(streq(word, "dup"))    { token = T_DUP; }
-                    else if(streq(word, "over"))   { token = T_OVER; }
-                    else if(streq(word, "rot"))    { token = T_ROT; }
-                    else if(streq(word, "drop"))   { token = T_DROP; }
-                    else if(streq(word, "2swap"))  { token = T_2SWAP; }
-                    else if(streq(word, "2dup"))   { token = T_2DUP; }
-                    else if(streq(word, "2over"))  { token = T_2OVER; }
-                    else if(streq(word, "2drop"))  { token = T_2DROP; }
-                    else if(streq(word, "negate")) { token = T_NEGATE; }
-                    else if(streq(word, "+"))      { token = T_ADD; }
-                    else if(streq(word, "-"))      { token = T_SUB; }
-                    else if(streq(word, "*"))      { token = T_MUL; }
-                    else if(streq(word, "/"))      { token = T_DIV; }
-                    else if(streq(word, "mod"))    { token = T_MOD; }
-                    else if(streq(word, "/mod"))   { token = T_DIVMOD; }
-                    else if(streq(word, "*/"))     { token = T_MULDIV; }
-                    else if(streq(word, "*/mod"))  { token = T_MULDIVMOD; }
-                    else if(streq(word, "1+"))     { token = T_1ADD; }
-                    else if(streq(word, "1-"))     { token = T_1SUB; }
-                    else if(streq(word, "2+"))     { token = T_2ADD; }
-                    else if(streq(word, "2-"))     { token = T_2SUB; }
-                    else if(streq(word, "2*"))     { token = T_2MUL; }
-                    else if(streq(word, "2/"))     { token = T_2DIV; }
-                    else if(streq(word, "abs"))    { token = T_ABS; }
-                    else if(streq(word, "min"))    { token = T_MIN; }
-                    else if(streq(word, "max"))    { token = T_MAX; }
-                    else if(streq(word, "invert")) { token = T_INVERT; }
-                    else if(streq(word, "="))      { token = T_EQ; }
-                    else if(streq(word, "<>"))     { token = T_NEQ; }
-                    else if(streq(word, "<"))      { token = T_LT; }
-                    else if(streq(word, ">"))      { token = T_GT; }
-                    else if(streq(word, "0="))     { token = T_0EQ; }
-                    else if(streq(word, "0<"))     { token = T_0LT; }
-                    else if(streq(word, "0>"))     { token = T_0GT; }
-                    else if(streq(word, "and"))    { token = T_AND; }
-                    else if(streq(word, "or"))     { token = T_OR; }
-                    else if(streq(word, "?dup"))   { token = T_DUPIFNOT0; }
-                    else if(streq(word, "if"))     { token = T_IF; }
-                    else if(streq(word, "else"))   { token = T_ELSE; }
-                    else if(streq(word, "then"))   { token = T_THEN; }
-                    else if(streq(word, "do"))     { token = T_DO; }
-                    else if(streq(word, "loop"))   { token = T_LOOP; }
-                    else if(streq(word, "+loop"))  { token = T_PLOOP; }
-                    else if(streq(word, ">R"))     { token = T_RIN; }
-                    else if(streq(word, "R>"))     { token = T_ROUT; }
-                    else if(streq(word, "R@"))     { token = T_RAT; }
+                    /* Skip line comments */
+                    if(streq(word, "\\"))
+                    {
+                        while(*src != '\n')
+                        {
+                            ++src;
+                        }
+                        return(next());
+                    }
+
+                         if(streq(word, "("))        { token = T_LPAREN; }
+                    else if(streq(word, ")"))        { token = T_RPAREN; }
+                    else if(streq(word, ":"))        { token = T_COLON; }
+                    else if(streq(word, ";"))        { token = T_SEMI; }
+                    else if(streq(word, "."))        { token = T_DOT; }
+                    else if(streq(word, "emit"))     { token = T_EMIT; }
+                    else if(streq(word, "space"))    { token = T_SPACE; }
+                    else if(streq(word, "spaces"))   { token = T_SPACES; }
+                    else if(streq(word, "cr"))       { token = T_CR; }
+                    else if(streq(word, "page"))     { token = T_PAGE; }
+                    else if(streq(word, "quit"))     { token = T_QUIT; }
+                    else if(streq(word, "exit"))     { token = T_EXIT; }
+                    else if(streq(word, "swap"))     { token = T_SWAP; }
+                    else if(streq(word, "dup"))      { token = T_DUP; }
+                    else if(streq(word, "over"))     { token = T_OVER; }
+                    else if(streq(word, "rot"))      { token = T_ROT; }
+                    else if(streq(word, "drop"))     { token = T_DROP; }
+                    else if(streq(word, "2swap"))    { token = T_2SWAP; }
+                    else if(streq(word, "2dup"))     { token = T_2DUP; }
+                    else if(streq(word, "2over"))    { token = T_2OVER; }
+                    else if(streq(word, "2drop"))    { token = T_2DROP; }
+                    else if(streq(word, "negate"))   { token = T_NEGATE; }
+                    else if(streq(word, "+"))        { token = T_ADD; }
+                    else if(streq(word, "-"))        { token = T_SUB; }
+                    else if(streq(word, "*"))        { token = T_MUL; }
+                    else if(streq(word, "/"))        { token = T_DIV; }
+                    else if(streq(word, "mod"))      { token = T_MOD; }
+                    else if(streq(word, "/mod"))     { token = T_DIVMOD; }
+                    else if(streq(word, "*/"))       { token = T_MULDIV; }
+                    else if(streq(word, "*/mod"))    { token = T_MULDIVMOD; }
+                    else if(streq(word, "1+"))       { token = T_1ADD; }
+                    else if(streq(word, "1-"))       { token = T_1SUB; }
+                    else if(streq(word, "2+"))       { token = T_2ADD; }
+                    else if(streq(word, "2-"))       { token = T_2SUB; }
+                    else if(streq(word, "2*"))       { token = T_2MUL; }
+                    else if(streq(word, "2/"))       { token = T_2DIV; }
+                    else if(streq(word, "abs"))      { token = T_ABS; }
+                    else if(streq(word, "min"))      { token = T_MIN; }
+                    else if(streq(word, "max"))      { token = T_MAX; }
+                    else if(streq(word, "invert"))   { token = T_INVERT; }
+                    else if(streq(word, "="))        { token = T_EQ; }
+                    else if(streq(word, "<>"))       { token = T_NEQ; }
+                    else if(streq(word, "<"))        { token = T_LT; }
+                    else if(streq(word, ">"))        { token = T_GT; }
+                    else if(streq(word, "0="))       { token = T_0EQ; }
+                    else if(streq(word, "0<"))       { token = T_0LT; }
+                    else if(streq(word, "0>"))       { token = T_0GT; }
+                    else if(streq(word, "and"))      { token = T_AND; }
+                    else if(streq(word, "or"))       { token = T_OR; }
+                    else if(streq(word, "?dup"))     { token = T_DUPIFNOT0; }
+                    else if(streq(word, "if"))       { token = T_IF; }
+                    else if(streq(word, "else"))     { token = T_ELSE; }
+                    else if(streq(word, "then"))     { token = T_THEN; }
+                    else if(streq(word, "do"))       { token = T_DO; }
+                    else if(streq(word, "loop"))     { token = T_LOOP; }
+                    else if(streq(word, "+loop"))    { token = T_PLOOP; }
+                    else if(streq(word, "leave"))    { token = T_LEAVE; }
+                    else if(streq(word, ">R"))       { token = T_RIN; }
+                    else if(streq(word, "R>"))       { token = T_ROUT; }
+                    else if(streq(word, "R@"))       { token = T_RAT; }
+                    else if(streq(word, "constant")) { token = T_CONSTANT; }
+                    else if(streq(word, "variable")) { token = T_VARIABLE; }
+                    else if(streq(word, "!"))        { token = T_BANG; }
+                    else if(streq(word, "+!"))       { token = T_PBANG; }
+                    else if(streq(word, "@"))        { token = T_AT; }
+                    else if(streq(word, "?"))        { token = T_QMARK; }
                     else
                     {
                         token = T_WORD;
@@ -409,6 +438,96 @@ freelbl(char *l)
     free(l);
 }
 
+
+/* NOTE(driverfury):
+ * vtable will conatin all variable declarations
+ */
+enum
+{
+    V_VAR,
+    V_CONST,
+
+    V_COUNT
+};
+
+struct Var
+{
+    int type;
+    char name[33]; /* NOTE(driverfury): name max 32 characters */
+    char lbl[13];
+    int val;
+};
+
+struct Var vtable[100];
+int vtablecount;
+
+struct Var *
+getvarconst(char *name)
+{
+    int i;
+
+    for(i = 0;
+        i < vtablecount;
+        ++i)
+    {
+        if(streq(name, vtable[i].name))
+        {
+            return(&vtable[i]);
+        }
+    }
+
+    return(0);
+}
+
+struct Var *
+addvar(char *name)
+{
+    struct Var *v;
+    char *lbl;
+
+    v = 0;
+    if(getvarconst(name))
+    {
+        fatal("Const/Variable '%s' already defined!", name);
+    }
+
+    assert(vtablecount < 100);
+
+    v = &vtable[vtablecount++];
+    v->type = V_VAR;
+    strncpy(v->name, name, 33);
+    v->name[32] = 0;
+    lbl = genlbl();
+    strncpy(v->lbl, lbl, 13);
+    v->lbl[12] = 0;
+    freelbl(lbl);
+
+    return(v);
+}
+
+struct Var *
+addconst(char *name, int val)
+{
+    struct Var *v;
+
+    v = 0;
+    if(getvarconst(name))
+    {
+        fatal("Const/Variable '%s' already defined!", name);
+    }
+
+    assert(vtablecount < 100);
+
+    v = &vtable[vtablecount++];
+    v->type = V_CONST;
+    strncpy(v->name, name, 33);
+    v->name[32] = 0;
+    v->val = val;
+
+    return(v);
+}
+
+
 void
 compileins(FILE *fout)
 {
@@ -436,29 +555,45 @@ compileins(FILE *fout)
                 char *wcode;
                 char *srcprev;
                 int srclprev;
+                struct Var *var;
 
-                srcprev = src;
-                srclprev = srcl;
-                wcode = getwdef(word);
-
-                if(wcode)
+                var = getvarconst(word);
+                if(var)
                 {
-                    src = wcode;
-
-                    t = next();
-                    while(t != T_SEMI)
+                    if(var->type == V_CONST)
                     {
-                        putback();
-                        compileins(fout);
-                        t = next();
+                        fprintf(fout, "\tpushl $%d\n", var->val);
                     }
-
-                    src = srcprev;
-                    srcl = srclprev;
+                    else if(var->type == V_VAR)
+                    {
+                        fprintf(fout, "\tpushl %s\n", var->lbl);
+                    }
                 }
                 else
                 {
-                    fatal("Unknown word '%s'", word);
+                    srcprev = src;
+                    srclprev = srcl;
+                    wcode = getwdef(word);
+
+                    if(wcode)
+                    {
+                        src = wcode;
+
+                        t = next();
+                        while(t != T_SEMI)
+                        {
+                            putback();
+                            compileins(fout);
+                            t = next();
+                        }
+
+                        src = srcprev;
+                        srcl = srclprev;
+                    }
+                    else
+                    {
+                        fatal("Unknown word '%s'", word);
+                    }
                 }
             } break;
 
@@ -516,6 +651,41 @@ compileins(FILE *fout)
                 fprintf(fout, "\tpushl $10\n");
                 fprintf(fout, "\tcall putc\n");
                 fprintf(fout, "\taddl $4,%%esp\n");
+            } break;
+
+            case T_PAGE:
+            {
+                /* NOTE(driverfury):
+                 * We put 27,"[H",27,"[2J" bytes sequence to the screen
+                 * to clear it (ANSI terminal stuff).
+                 */
+                fprintf(fout, "\tpushl $27\n");
+                fprintf(fout, "\tcall putc\n");
+                fprintf(fout, "\taddl $4,%%esp\n");
+                fprintf(fout, "\tpushl $91\n");
+                fprintf(fout, "\tcall putc\n");
+                fprintf(fout, "\taddl $4,%%esp\n");
+                fprintf(fout, "\tpushl $72\n");
+                fprintf(fout, "\tcall putc\n");
+                fprintf(fout, "\taddl $4,%%esp\n");
+                fprintf(fout, "\tpushl $27\n");
+                fprintf(fout, "\tcall putc\n");
+                fprintf(fout, "\taddl $4,%%esp\n");
+                fprintf(fout, "\tpushl $91\n");
+                fprintf(fout, "\tcall putc\n");
+                fprintf(fout, "\taddl $4,%%esp\n");
+                fprintf(fout, "\tpushl $50\n");
+                fprintf(fout, "\tcall putc\n");
+                fprintf(fout, "\taddl $4,%%esp\n");
+                fprintf(fout, "\tpushl $74\n");
+                fprintf(fout, "\tcall putc\n");
+                fprintf(fout, "\taddl $4,%%esp\n");
+            } break;
+
+            case T_QUIT:
+            {
+                fprintf(fout, "\tpushl $0\n");
+                fprintf(fout, "\tjmp exit\n");
             } break;
 
             case T_EXIT:
@@ -1001,6 +1171,7 @@ compileins(FILE *fout)
             case T_DO:
             {
                 lbl1 = genlbl();
+                lbl2 = genlbl();
 
                 fprintf(fout, "%s:\n", lbl1);
 
@@ -1008,7 +1179,15 @@ compileins(FILE *fout)
                 putback();
                 while(t != T_LOOP && t != T_PLOOP)
                 {
-                    compileins(fout);
+                    if(t == T_LEAVE)
+                    {
+                        fprintf(fout, "\tjmp %s\n", lbl2);
+                        expect(T_LEAVE);
+                    }
+                    else
+                    {
+                        compileins(fout);
+                    }
                     t = next();
                     putback();
                 }
@@ -1032,10 +1211,12 @@ compileins(FILE *fout)
                 fprintf(fout, "\tpushl %%ecx\n");
                 fprintf(fout, "\tcmpl %%edx,%%ecx\n");
                 fprintf(fout, "\tjl %s\n", lbl1);
+                fprintf(fout, "%s:\n", lbl2);
                 fprintf(fout, "\tpopl %%ecx\n");
                 fprintf(fout, "\tpopl %%edx\n");
 
                 freelbl(lbl1);
+                freelbl(lbl2);
             } break;
 
             case T_RIN:
@@ -1060,6 +1241,50 @@ compileins(FILE *fout)
             {
                 fprintf(fout, "\tmovl (rstackp),%%eax\n");
                 fprintf(fout, "\tpushl %%eax\n");
+            } break;
+
+            case T_CONSTANT:
+            {
+                fatal("You cannot declare a constant inside a word definition!\n");
+            } break;
+
+            case T_VARIABLE:
+            {
+                fatal("You cannot declare a variable inside a word definition!\n");
+            } break;
+
+            case T_BANG:
+            {
+                fprintf(fout, "\tpopl %%ebx\n");
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tmovl %%eax,(%%ebx)\n");
+            } break;
+
+            case T_PBANG:
+            {
+                fprintf(fout, "\tpopl %%ebx\n");
+                fprintf(fout, "\tmovl (%%ebx),%%eax\n");
+                fprintf(fout, "\tincl %%eax\n");
+                fprintf(fout, "\tmovl %%eax,(%%ebx)\n");
+            } break;
+
+            case T_AT:
+            {
+                fprintf(fout, "\tpopl %%ebx\n");
+                fprintf(fout, "\tmovl (%%ebx),%%eax\n");
+                fprintf(fout, "\tpushl %%eax\n");
+            } break;
+
+            case T_QMARK:
+            {
+                fprintf(fout, "\tpopl %%ebx\n");
+                fprintf(fout, "\tmovl (%%ebx),%%eax\n");
+                fprintf(fout, "\tpushl %%eax\n");
+                fprintf(fout, "\tcall putint\n");
+                fprintf(fout, "\taddl $4,%%esp\n");
+                fprintf(fout, "\tpushl $32\n");
+                fprintf(fout, "\tcall putc\n");
+                fprintf(fout, "\taddl $4,%%esp\n");
             } break;
 
             default:
@@ -1098,6 +1323,22 @@ compile(FILE *fout)
             }
             while(t != T_SEMI);
         }
+        else if(token == T_CONSTANT)
+        {
+            char name[33];
+            next();
+            expect(T_WORD);
+            strncpy(name, word, 33);
+            name[32] = 0;
+            expect(T_INT);
+            addconst(name, tokenval);
+        }
+        else if(token == T_VARIABLE)
+        {
+            next();
+            expect(T_WORD);
+            addvar(word);
+        }
         else
         {
             compileins(fout);
@@ -1132,6 +1373,7 @@ main(int argc, char *argv[])
     long fsizein;
     char *srcin;
     long cread;
+    int i;
 
     if(argc < 2)
     {
@@ -1170,6 +1412,21 @@ main(int argc, char *argv[])
 
     init(fnamein, srcin);
     compile(fout);
+
+    /* NOTE(driverfury):
+     * Put variable at the end of the file (like a data section)
+     */
+    for(i = 0;
+        i < vtablecount;
+        ++i)
+    {
+        if(vtable[i].type == V_VAR)
+        {
+            fprintf(fout, "%s:\n", vtable[i].lbl);
+            fprintf(fout, "\t.zero $4\n");
+        }
+    }
+
     fclose(fout);
 
     assemble(fnameout, "a.out");
