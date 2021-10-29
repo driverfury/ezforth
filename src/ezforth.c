@@ -8,7 +8,7 @@
  * [ ] Make my own stdio.h since we only use printf (or make a tiny executable
  *     without depending on redist: https://youtube.com/watch?v=5tg_TbURMy0)
  * [ ] Is exit a standard function (ANSI Forth)? Check it.
- * [ ] T_MULDIV and T_MULDIVMOD
+ * [ ] Bitwise operations 2* 2/ etc...
  *
  */
 #include <stdlib.h>
@@ -119,31 +119,38 @@ enum
     T_DIV,
     T_MOD,
     T_DIVMOD,
-    T_MULDIV,
-    T_MULDIVMOD,
 
     T_1ADD,
     T_1SUB,
-    T_2ADD,
-    T_2SUB,
-    T_2MUL,
-    T_2DIV,
 
     T_ABS,
     T_MIN,
     T_MAX,
 
     T_INVERT,
+    T_AND,
+    T_OR,
+    T_XOR,
+    T_2MUL,
+    T_2DIV,
+
+    T_TRUE,
+    T_FALSE,
+
     T_EQ,
     T_NEQ,
     T_LT,
+    T_LE,
     T_GT,
+    T_GE,
     T_0EQ,
     T_0LT,
     T_0GT,
 
+    /*
     T_AND,
     T_OR,
+    */
     T_DUPIFNOT0,
 
     T_IF,
@@ -365,27 +372,28 @@ next()
                     else if(streq(word, "/"))        { token = T_DIV; }
                     else if(streq(word, "mod"))      { token = T_MOD; }
                     else if(streq(word, "/mod"))     { token = T_DIVMOD; }
-                    else if(streq(word, "*/"))       { token = T_MULDIV; }
-                    else if(streq(word, "*/mod"))    { token = T_MULDIVMOD; }
                     else if(streq(word, "1+"))       { token = T_1ADD; }
                     else if(streq(word, "1-"))       { token = T_1SUB; }
-                    else if(streq(word, "2+"))       { token = T_2ADD; }
-                    else if(streq(word, "2-"))       { token = T_2SUB; }
-                    else if(streq(word, "2*"))       { token = T_2MUL; }
-                    else if(streq(word, "2/"))       { token = T_2DIV; }
                     else if(streq(word, "abs"))      { token = T_ABS; }
                     else if(streq(word, "min"))      { token = T_MIN; }
                     else if(streq(word, "max"))      { token = T_MAX; }
                     else if(streq(word, "invert"))   { token = T_INVERT; }
+                    else if(streq(word, "and"))      { token = T_AND; }
+                    else if(streq(word, "or"))       { token = T_OR; }
+                    else if(streq(word, "xor"))      { token = T_XOR; }
+                    else if(streq(word, "2*"))       { token = T_2MUL; }
+                    else if(streq(word, "2/"))       { token = T_2DIV; }
+                    else if(streq(word, "true"))     { token = T_TRUE; }
+                    else if(streq(word, "false"))    { token = T_FALSE; }
                     else if(streq(word, "="))        { token = T_EQ; }
                     else if(streq(word, "<>"))       { token = T_NEQ; }
                     else if(streq(word, "<"))        { token = T_LT; }
+                    else if(streq(word, "<="))       { token = T_LE; }
                     else if(streq(word, ">"))        { token = T_GT; }
+                    else if(streq(word, ">="))       { token = T_GE; }
                     else if(streq(word, "0="))       { token = T_0EQ; }
                     else if(streq(word, "0<"))       { token = T_0LT; }
                     else if(streq(word, "0>"))       { token = T_0GT; }
-                    else if(streq(word, "and"))      { token = T_AND; }
-                    else if(streq(word, "or"))       { token = T_OR; }
                     else if(streq(word, "?dup"))     { token = T_DUPIFNOT0; }
                     else if(streq(word, "if"))       { token = T_IF; }
                     else if(streq(word, "else"))     { token = T_ELSE; }
@@ -884,18 +892,6 @@ compileins(FILE *fout)
                 fprintf(fout, "\tpushl %%eax\n");
             } break;
 
-            case T_MULDIV:
-            {
-                /* TODO */
-                assert(0);
-            } break;
-
-            case T_MULDIVMOD:
-            {
-                /* TODO */
-                assert(0);
-            } break;
-
             case T_1ADD:
             {
                 fprintf(fout, "\tpopl %%eax\n");
@@ -910,50 +906,18 @@ compileins(FILE *fout)
                 fprintf(fout, "\tpushl %%eax\n");
             } break;
 
-            case T_2ADD:
-            {
-                fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tincl %%eax\n");
-                fprintf(fout, "\tincl %%eax\n");
-                fprintf(fout, "\tpushl %%eax\n");
-            } break;
-
-            case T_2SUB:
-            {
-                fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tdecl %%eax\n");
-                fprintf(fout, "\tdecl %%eax\n");
-                fprintf(fout, "\tpushl %%eax\n");
-            } break;
-
-            case T_2MUL:
-            {
-                fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tsall %%eax\n");
-                fprintf(fout, "\tpushl %%eax\n");
-            } break;
-
-            case T_2DIV:
-            {
-                fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tmovl $2,%%ebx\n");
-                fprintf(fout, "\tcdq\n");
-                fprintf(fout, "\tidivl %%ebx\n");
-                fprintf(fout, "\tpushl %%eax\n");
-            } break;
-
             case T_ABS:
             {
-                /* TODO: Abs without sarl instruction */
-                /*
+                lbl1 = genlbl();
+
                 fprintf(fout, "\tpopl %%eax\n");
-                fprintf(fout, "\tmovl %%eax,%%edx\n");
-                fprintf(fout, "\tsarl $31,%%eax\n");
-                fprintf(fout, "\tmovl %%eax,%%ebx\n");
-                fprintf(fout, "\txorl %%edx,%%ebx\n");
-                fprintf(fout, "\tsubl %%eax,%%ebx\n");
-                fprintf(fout, "\tpushl %%ebx\n");
-                */
+                fprintf(fout, "\tcmpl $0,%%eax\n");
+                fprintf(fout, "\tjge %s\n", lbl1);
+                fprintf(fout, "\tnegl %%eax\n");
+                fprintf(fout, "%s:\n", lbl1);
+                fprintf(fout, "\tpushl %%eax\n");
+
+                freelbl(lbl1);
             } break;
 
             case T_MIN:
@@ -994,10 +958,52 @@ compileins(FILE *fout)
                 freelbl(lbl2);
             } break;
 
+            case T_TRUE:
+            {
+                fprintf(fout, "\tpushl $-1\n");
+            } break;
+
+            case T_FALSE:
+            {
+                fprintf(fout, "\tpushl $0\n");
+            } break;
+
             case T_INVERT:
             {
                 fprintf(fout, "\tpopl %%eax\n");
                 fprintf(fout, "\tnotl %%eax\n");
+                fprintf(fout, "\tpushl %%eax\n");
+            } break;
+
+            case T_AND:
+            {
+                /* TODO */
+                fatal("Unimplemented");
+            } break;
+
+            case T_OR:
+            {
+                /* TODO */
+                fatal("Unimplemented");
+            } break;
+
+            case T_XOR:
+            {
+                /* TODO */
+                fatal("Unimplemented");
+            } break;
+
+            case T_2MUL:
+            {
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tsall %%eax\n");
+                fprintf(fout, "\tpushl %%eax\n");
+            } break;
+
+            case T_2DIV:
+            {
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tsarl %%eax\n");
                 fprintf(fout, "\tpushl %%eax\n");
             } break;
 
@@ -1058,6 +1064,25 @@ compileins(FILE *fout)
                 freelbl(lbl2);
             } break;
 
+            case T_LE:
+            {
+                lbl1 = genlbl();
+                lbl2 = genlbl();
+
+                fprintf(fout, "\tpopl %%ecx\n");
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tcmpl %%ecx,%%eax\n");
+                fprintf(fout, "\tjle %s\n", lbl1);
+                fprintf(fout, "\tpushl $0\n");
+                fprintf(fout, "\tjmp %s\n", lbl2);
+                fprintf(fout, "%s:\n", lbl1);
+                fprintf(fout, "\tpushl $-1\n");
+                fprintf(fout, "%s:\n", lbl2);
+
+                freelbl(lbl1);
+                freelbl(lbl2);
+            } break;
+
             case T_GT:
             {
                 lbl1 = genlbl();
@@ -1067,6 +1092,25 @@ compileins(FILE *fout)
                 fprintf(fout, "\tpopl %%eax\n");
                 fprintf(fout, "\tcmpl %%ecx,%%eax\n");
                 fprintf(fout, "\tjg %s\n", lbl1);
+                fprintf(fout, "\tpushl $0\n");
+                fprintf(fout, "\tjmp %s\n", lbl2);
+                fprintf(fout, "%s:\n", lbl1);
+                fprintf(fout, "\tpushl $-1\n");
+                fprintf(fout, "%s:\n", lbl2);
+
+                freelbl(lbl1);
+                freelbl(lbl2);
+            } break;
+
+            case T_GE:
+            {
+                lbl1 = genlbl();
+                lbl2 = genlbl();
+
+                fprintf(fout, "\tpopl %%ecx\n");
+                fprintf(fout, "\tpopl %%eax\n");
+                fprintf(fout, "\tcmpl %%ecx,%%eax\n");
+                fprintf(fout, "\tjge %s\n", lbl1);
                 fprintf(fout, "\tpushl $0\n");
                 fprintf(fout, "\tjmp %s\n", lbl2);
                 fprintf(fout, "%s:\n", lbl1);
@@ -1131,6 +1175,10 @@ compileins(FILE *fout)
                 freelbl(lbl2);
             } break;
 
+            /*
+             * TODO(driverfury): Check if and/or are bitwise or logical like && in C.
+             */
+            /*
             case T_AND:
             {
                 lbl1 = genlbl();
@@ -1172,6 +1220,7 @@ compileins(FILE *fout)
                 freelbl(lbl1);
                 freelbl(lbl2);
             } break;
+            */
 
             case T_DUPIFNOT0:
             {
