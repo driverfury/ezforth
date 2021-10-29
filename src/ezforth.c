@@ -1,14 +1,17 @@
 /**
  * TODO:
- * [x] We cannot compile words as functions because pushing the ebp etc...
- *     (function preamble and postamble) will affect the stack and the words
- *     won't work anymore.
- *     Possible solution: we can define words as AST and then replace the word
- *     with its code (like inline functions or macros).
- * [ ] Make my own stdio.h since we only use printf (or make a tiny executable
- *     without depending on redist: https://youtube.com/watch?v=5tg_TbURMy0)
- * [ ] Is exit a standard function (ANSI Forth)? Check it.
- * [ ] Bitwise operations 2* 2/ etc...
+ * [ ] When we compile do-loop we must put limit and index inside the return stack
+ *     (the word 'do' just do that).
+ *     Plus, we need to implement the leave word properly (it cleans up the return
+ *     stack before exiting the loop).
+ * [ ] We need to compile words as subroutines instead of as macros (read book
+ *     Programming Forth by Stephen Pelc) using the return stack
+ * [ ] Constant definition must have this syntax:
+ *        number constant name
+ *     and not this (our current syntax):
+ *        constant name number
+ *     We need to check after T_INT if next() == T_CONSTANT, if it is,
+ *     don't push the integer onto the stack, just define a new constant.
  *
  */
 #include <stdlib.h>
@@ -82,6 +85,7 @@ enum
 
     T_COLON,
     T_SEMI,
+    T_EXIT,
 
     T_WORD,
     T_INT,
@@ -95,9 +99,6 @@ enum
     T_CLS,
 
     T_KEY,
-
-    T_QUIT,
-    T_EXIT,
 
     T_SWAP,
     T_DUP,
@@ -351,6 +352,7 @@ next()
 
                          if(streq(word, ":"))        { token = T_COLON; }
                     else if(streq(word, ";"))        { token = T_SEMI; }
+                    else if(streq(word, "exit"))     { token = T_EXIT; }
                     else if(streq(word, "."))        { token = T_DOT; }
                     else if(streq(word, "emit"))     { token = T_EMIT; }
                     else if(streq(word, "type"))     { token = T_TYPE; }
@@ -360,8 +362,6 @@ next()
                     else if(streq(word, "page"))     { token = T_PAGE; }
                     else if(streq(word, "cls"))      { token = T_CLS; }
                     else if(streq(word, "key"))      { token = T_KEY; }
-                    else if(streq(word, "quit"))     { token = T_QUIT; }
-                    else if(streq(word, "exit"))     { token = T_EXIT; }
                     else if(streq(word, "swap"))     { token = T_SWAP; }
                     else if(streq(word, "dup"))      { token = T_DUP; }
                     else if(streq(word, "over"))     { token = T_OVER; }
@@ -550,6 +550,7 @@ addconst(char *name, int val)
     return(v);
 }
 
+char *wendlbl;
 
 void
 compileins(FILE *fout)
@@ -613,6 +614,32 @@ compileins(FILE *fout)
                     }
                 }
             } break;
+
+            /**
+             * NOTE(driverfury): exit instruction is used to exit
+             * from a word definition not from the program (like a
+             * return from a function).
+             * Maybe we can use exit as a return when inside a word def
+             * but as exit(n) outside the word def.
+             */
+#if 0
+            case T_EXIT:
+            {
+                fprintf(fout, "\tjmp exit\n");
+            } break;
+#else
+            case T_EXIT:
+            {
+                if(wendlbl)
+                {
+                    fprintf(fout, "\tjmp %s\n", wendlbl);
+                }
+                else
+                {
+                    fatal("You cannot exit outside a word definition");
+                }
+            } break;
+#endif
 
             case T_INT:
             {
@@ -751,17 +778,6 @@ compileins(FILE *fout)
             {
                 fprintf(fout, "\tcall getc\n");
                 fprintf(fout, "\tpushl %%eax\n");
-            } break;
-
-            case T_QUIT:
-            {
-                fprintf(fout, "\tpushl $0\n");
-                fprintf(fout, "\tjmp exit\n");
-            } break;
-
-            case T_EXIT:
-            {
-                fprintf(fout, "\tjmp exit\n");
             } break;
 
             case T_SWAP:
@@ -1433,12 +1449,17 @@ compile(FILE *fout)
             expect(T_WORD);
             wcode = src;
             pushwdef(word, wcode, srcl);
+            wendlbl = genlbl();
 
             do
             {
                 t = next();
             }
             while(t != T_SEMI);
+            fprintf("%s:\n", wendlbl);
+
+            freelbl(wendlbl);
+            wendlbl = 0;
         }
         else if(token == T_CONSTANT)
         {
@@ -1534,7 +1555,7 @@ main(int argc, char *argv[])
     compile(fout);
 
     /* NOTE(driverfury):
-     * Put variable at the end of the file (like a data section)
+     * Put variables at the end of the file (like a data section)
      */
     for(i = 0;
         i < vtablecount;
