@@ -80,9 +80,6 @@ enum
 {
     T_EOF = 0,
 
-    T_LPAREN,
-    T_RPAREN,
-
     T_COLON,
     T_SEMI,
 
@@ -341,9 +338,18 @@ next()
                         return(next());
                     }
 
-                         if(streq(word, "("))        { token = T_LPAREN; }
-                    else if(streq(word, ")"))        { token = T_RPAREN; }
-                    else if(streq(word, ":"))        { token = T_COLON; }
+                    /* Skip parenthesis comments */
+                    if(streq(word, "(") && isspace(*src))
+                    {
+                        while(*src != ')')
+                        {
+                            ++src;
+                        }
+                        ++src;
+                        return(next());
+                    }
+
+                         if(streq(word, ":"))        { token = T_COLON; }
                     else if(streq(word, ";"))        { token = T_SEMI; }
                     else if(streq(word, "."))        { token = T_DOT; }
                     else if(streq(word, "emit"))     { token = T_EMIT; }
@@ -556,12 +562,6 @@ compileins(FILE *fout)
     {
         switch(token)
         {
-            case T_LPAREN:
-            {
-                /* Skip comments */
-                while(next() != T_RPAREN);
-            } break;
-
             case T_COLON:
             {
                 fatal("You cannot define a word inside a word definition!\n");
